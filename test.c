@@ -11,8 +11,12 @@ typedef struct {
     spinlock_mcs_t *lock;
 } spinlock_test_t;
 
+#ifndef NUM_THREADS
 #define NUM_THREADS 16
+#endif
+#ifndef NUM_PUSHES
 #define NUM_PUSHES 100000
+#endif
 
 
 int increment_counter(void *arg) {
