@@ -1,6 +1,6 @@
 {
     "name": "spinlock_mcs",
-    "version": "0.0.0",
+    "version": "0.1.0",
     "repo": "goodcleanfun/spinlock_mcs",
     "description": "A Mellor-Crummey Scott queued spinlock which requires threads to spin only on their local node, better suited to NUMA architectures.",
     "keywords": ["spinlock", "mcs", "c11", "atomic", "lock", "mutex", "numa"],
