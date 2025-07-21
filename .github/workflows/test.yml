@@ -30,8 +30,10 @@ jobs:
           cd clib
           make
           sudo make install
+      - name: Install dependencies
+        run: make install
       - name: Run tests
-        run: make CC=${{ matrix.compiler }} CFLAGS="-std=gnu11" LDFLAGS="-pthread -latomic" install test
+        run: make CC=${{ matrix.compiler }} CFLAGS="-std=gnu11" LDFLAGS="-pthread -latomic" test
 
   test-macos:
     runs-on: macos-latest
@@ -53,8 +55,10 @@ jobs:
           cd clib
           make CC=${{ matrix.compiler }}
           sudo make install
+      - name: Install dependencies
+        run: make install
       - name: Run tests with ${{ matrix.compiler }}
-        run: make CC=${{ matrix.compiler }} CFLAGS="-std=c11" install test
+        run: make CC=${{ matrix.compiler }} CFLAGS="-std=c11" test
 
   test-windows-msvc:
     runs-on: windows-latest
