@@ -3,9 +3,13 @@
 
 #include <stdatomic.h>
 
+#include <stdbool.h>
+
 #include "aligned/aligned.h"
 #include "cpu_relax/cpu_relax.h"
 #include "threading/threading.h"
+
+#define MAX_PAUSE_ITERATIONS 40
 
 typedef struct spinlock_mcs_node {
     atomic_bool locked;
@@ -78,8 +82,18 @@ static void spinlock_mcs_lock(spinlock_mcs_t *lock) {
     if (pred != NULL) {
         atomic_store(&node->locked, true);
         atomic_store(&pred->next, node);
-        while (atomic_load(&node->locked)) {
+        bool node_is_free = false;
+        for (int i = 0; i < MAX_PAUSE_ITERATIONS; i++) {
+            if (!atomic_load(&node->locked)) {
+                node_is_free = true;
+                break;
+            }
             cpu_relax();
+        }
+        if (!node_is_free) {
+            while (atomic_load(&node->locked)) {
+                thrd_yield();
+            }
         }
     }
 }
@@ -105,8 +119,18 @@ static void spinlock_mcs_unlock(spinlock_mcs_t *lock) {
             return;
         }
         // Wait until successor fills in its next field
-        while (atomic_load(&node->next) == NULL) {
+        bool have_next = false;
+        for (int i = 0; i < MAX_PAUSE_ITERATIONS; i++) {
+            if (atomic_load(&node->next) != NULL) {
+                have_next = true;
+                break;
+            }
             cpu_relax();
+        }
+        if (!have_next) {
+            while (atomic_load(&node->next) == NULL) {
+                thrd_yield();
+            }
         }
     }
     atomic_store(&node->next->locked, false);
