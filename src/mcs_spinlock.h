@@ -1,5 +1,5 @@
-#ifndef MCS_LOCK_H
-#define MCS_LOCK_H
+#ifndef MCS_SPINLOCK_H
+#define MCS_SPINLOCK_H
 
 #include <stdatomic.h>
 
@@ -84,14 +84,14 @@ static void mcs_spinlock_lock(mcs_spinlock_t *lock) {
         atomic_store(&pred->next, node);
         bool node_is_free = false;
         for (int i = 0; i < MAX_PAUSE_ITERATIONS; i++) {
-            if (!atomic_load(&node->locked)) {
+            if (!atomic_load_explicit(&node->locked, memory_order_acquire)) {
                 node_is_free = true;
                 break;
             }
             cpu_relax();
         }
         if (!node_is_free) {
-            while (atomic_load(&node->locked)) {
+            while (atomic_load_explicit(&node->locked, memory_order_relaxed)) {
                 thrd_yield();
             }
         }
@@ -121,19 +121,19 @@ static void mcs_spinlock_unlock(mcs_spinlock_t *lock) {
         // Wait until successor fills in its next field
         bool have_next = false;
         for (int i = 0; i < MAX_PAUSE_ITERATIONS; i++) {
-            if (atomic_load(&node->next) != NULL) {
+            if (atomic_load_explicit(&node->next, memory_order_acquire) != NULL) {
                 have_next = true;
                 break;
             }
             cpu_relax();
         }
         if (!have_next) {
-            while (atomic_load(&node->next) == NULL) {
+            while (atomic_load_explicit(&node->next, memory_order_relaxed) == NULL) {
                 thrd_yield();
             }
         }
     }
-    atomic_store(&node->next->locked, false);
+    atomic_store_explicit(&node->next->locked, false, memory_order_release);
     atomic_store(&node->next, NULL);
 }
 
