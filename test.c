@@ -4,11 +4,11 @@
 #include "greatest/greatest.h"
 #include "threading/threading.h"
 
-#include "spinlock_mcs.h"
+#include "mcs_spinlock.h"
 
 typedef struct {
     int counter;
-    spinlock_mcs_t *lock;
+    mcs_spinlock_t *lock;
 } spinlock_test_t;
 
 #ifndef NUM_THREADS
@@ -22,20 +22,20 @@ typedef struct {
 int increment_counter(void *arg) {
     spinlock_test_t *test = (spinlock_test_t *)arg;
     for (int i = 0; i < NUM_PUSHES; i++) {
-        spinlock_mcs_lock(test->lock);
+        mcs_spinlock_lock(test->lock);
         test->counter++;
-        spinlock_mcs_unlock(test->lock);
+        mcs_spinlock_unlock(test->lock);
     }
     return 0;
 }
 
-TEST spinlock_mcs_multithread_test(void) {
+TEST mcs_spinlock_multithread_test(void) {
     thrd_t threads[NUM_THREADS];
 
     spinlock_test_t *test = (spinlock_test_t *)malloc(sizeof(spinlock_test_t));
 
     test->counter = 0;
-    spinlock_mcs_t *lock = spinlock_mcs_new();
+    mcs_spinlock_t *lock = mcs_spinlock_new();
     test->lock = lock;
 
     for (int i = 0; i < NUM_THREADS; i++) {
@@ -45,9 +45,9 @@ TEST spinlock_mcs_multithread_test(void) {
         thrd_join(threads[i], NULL);
     }
 
-    spinlock_mcs_lock(test->lock);
-    ASSERT_FALSE(spinlock_mcs_trylock(test->lock));
-    spinlock_mcs_unlock(test->lock);
+    mcs_spinlock_lock(test->lock);
+    ASSERT_FALSE(mcs_spinlock_trylock(test->lock));
+    mcs_spinlock_unlock(test->lock);
 
     ASSERT_EQ(NUM_THREADS * NUM_PUSHES, test->counter);
 
@@ -58,8 +58,8 @@ TEST spinlock_mcs_multithread_test(void) {
 
 
 // Main test suite
-SUITE(spinlock_mcs_tests) {
-    RUN_TEST(spinlock_mcs_multithread_test);
+SUITE(mcs_spinlock_tests) {
+    RUN_TEST(mcs_spinlock_multithread_test);
 }
 
 GREATEST_MAIN_DEFS();
@@ -67,7 +67,7 @@ GREATEST_MAIN_DEFS();
 int main(int argc, char **argv) {
     GREATEST_MAIN_BEGIN();
 
-    RUN_SUITE(spinlock_mcs_tests);
+    RUN_SUITE(mcs_spinlock_tests);
 
     GREATEST_MAIN_END();
 }
