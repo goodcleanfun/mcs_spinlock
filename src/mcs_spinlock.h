@@ -82,18 +82,14 @@ static void mcs_spinlock_lock(mcs_spinlock_t *lock) {
     if (pred != NULL) {
         atomic_store(&node->locked, true);
         atomic_store(&pred->next, node);
-        bool node_is_free = false;
         for (int i = 0; i < MAX_PAUSE_ITERATIONS; i++) {
             if (!atomic_load_explicit(&node->locked, memory_order_acquire)) {
-                node_is_free = true;
-                break;
+                return;
             }
             cpu_relax();
         }
-        if (!node_is_free) {
-            while (atomic_load_explicit(&node->locked, memory_order_relaxed)) {
-                thrd_yield();
-            }
+        while (atomic_load_explicit(&node->locked, memory_order_relaxed)) {
+            thrd_yield();
         }
     }
 }
